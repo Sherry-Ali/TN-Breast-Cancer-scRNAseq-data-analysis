@@ -1,0 +1,132 @@
+---
+title: "TN Breast Cancer scRNA-seq Analysis"
+author: "Sherry Ali"
+date: "2025-07-30"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(Seurat)
+library(SingleR)
+library(SingleCellExperiment)
+library(celldex)
+library(dplyr)
+library(patchwork)
+
+---
+
+## 🧬 **1. Project Overview**
+
+```r
+```{r}
+# This R Markdown performs a complete scRNA-seq workflow on two 10x Genomics
+# datasets derived from the same invasive ductal carcinoma patient.
+# The datasets differ only in throughput:
+#   - Low-throughput (LT): ~750 cells
+#   - High-throughput (HT): ~7,500 cells
+
+---
+
+## 📥 **2. Load Data**
+
+Replace the file paths with **relative paths** once you upload your `.h5` files:
+
+```r
+```{r load-data}
+LT.data <- Read10X_h5("data/Breast_Cancer_3p_LT_raw_feature_bc_matrix.h5")
+HT.data <- Read10X_h5("data/7500Breast_Cancer_3p_raw_feature_bc_matrix.h5")
+
+LT <- CreateSeuratObject(LT.data, project = "LT", min.cells = 3, min.features = 200)
+HT <- CreateSeuratObject(HT.data, project = "HT", min.cells = 3, min.features = 200)
+
+---
+
+## 🧹 **3. Quality Control**
+
+```r
+```{r qc}
+LT[["percent.mt"]] <- PercentageFeatureSet(LT, pattern = "^MT-")
+HT[["percent.mt"]] <- PercentageFeatureSet(HT, pattern = "^MT-")
+
+VlnPlot(LT, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"))
+VlnPlot(HT, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), cols = "red")
+
+LT <- subset(LT, subset = nFeature_RNA > 200 & nFeature_RNA < 8000 & percent.mt < 20)
+HT <- subset(HT, subset = nFeature_RNA > 200 & nFeature_RNA < 9000 & percent.mt < 20)
+
+---
+
+## 🔧 **4. Normalization & Feature Selection**
+
+```r
+```{r normalize}
+LT <- NormalizeData(LT)
+HT <- NormalizeData(HT)
+
+LT <- FindVariableFeatures(LT, selection.method = "vst", nfeatures = 2000)
+HT <- FindVariableFeatures(HT, selection.method = "vst", nfeatures = 2000)
+
+---
+
+## 📉 **5. Scaling, PCA, and UMAP**
+
+```r
+```{r pca-umap}
+LT <- ScaleData(LT)
+HT <- ScaleData(HT)
+
+LT <- RunPCA(LT)
+HT <- RunPCA(HT)
+
+LT <- RunUMAP(LT, dims = 1:6)
+HT <- RunUMAP(HT, dims = 1:6)
+
+DimPlot(LT, reduction = "umap", label = TRUE)
+DimPlot(HT, reduction = "umap", label = TRUE, cols = "red")
+
+---
+
+## 🔍 **6. Clustering & Marker Detection**
+
+```r
+```{r clustering}
+LT <- FindNeighbors(LT, dims = 1:6)
+LT <- FindClusters(LT, resolution = 1.0)
+
+HT <- FindNeighbors(HT, dims = 1:6)
+HT <- FindClusters(HT, resolution = 1.0)
+
+LT.markers <- FindAllMarkers(LT, only.pos = TRUE)
+HT.markers <- FindAllMarkers(HT, only.pos = TRUE)
+
+---
+
+## 🧬 **7. Cell Type Annotation (SingleR)**
+
+```r
+```{r singler}
+ref <- celldex::HumanPrimaryCellAtlasData()
+
+LT.sce <- as.SingleCellExperiment(LT)
+HT.sce <- as.SingleCellExperiment(HT)
+
+LT.labels <- SingleR(test = LT.sce, ref = ref, labels = ref$label.main)
+HT.labels <- SingleR(test = HT.sce, ref = ref, labels = ref$label.main)
+
+LT$SingleR_main <- LT.labels$labels
+HT$SingleR_main <- HT.labels$labels
+
+DimPlot(LT, group.by = "SingleR_main", label = TRUE)
+DimPlot(HT, group.by = "SingleR_main", label = TRUE)
+
+---
+
+## 🧪 **8. Session Info**
+
+```r
+```{r session}
+sessionInfo()
