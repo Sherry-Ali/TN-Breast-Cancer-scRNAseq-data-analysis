@@ -16,7 +16,7 @@ By running the entire workflow on both datasets — QC, normalization, PCA, UMAP
 As expected, the high‑throughput dataset produced more robust clusters, clearer marker gene patterns, and more reliable cell type annotations, while the low‑throughput dataset showed reduced resolution and noisier QC metrics.
 
 - Low‑ vs High‑Throughput Comparison (Same Patient)
-![Throughput Comparison Diagram](assets/throughput_comparison.png)
+![Throughput Comparison Diagram](figures/throughput_comparison.png)
 
 This visual summarizes the differences between the two datasets and how throughput impacts downstream analysis.
 
