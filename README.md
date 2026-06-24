@@ -150,3 +150,8 @@ Add copy number variation (CNV) inference (inferCNV)
 
 📫 Contact
 If you’d like to discuss this project or collaborate on computational biology research, feel free to reach out.
+
+All raw 10x Genomics .h5 files are not included in this repository due to size limits.
+To reproduce the analysis, place the following files in the data/ directory:
+
+7500Breast_Cancer_3p_raw_feature_bc_matrix.h5
